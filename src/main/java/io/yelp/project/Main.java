@@ -31,21 +31,13 @@ public class Main {
 
         for (int i = 0; i < properties.getQueriesCount(); i++) {
             Future<String> futureResult = service.submit(createGetQuery(cluster));
-//            futures.add(futureResult);
-            System.out.println(futureResult.get());
-
-////            new Thread(() -> {
-//                String randomExistingKey = RedisUtils.getRandomExistingKey();
-//                System.out.println("Redis GET key: " + randomExistingKey);
-//                System.out.println(cluster.hgetAll(randomExistingKey).toString());
-////            }).start();
+            futures.add(futureResult);
         }
 
         futures.forEach(f -> {
             try {
-                System.out.println(f.get(5, TimeUnit.MINUTES));
-
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                f.get();
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         });
@@ -65,11 +57,11 @@ public class Main {
 
     private static Callable<String> createGetQuery(JedisCluster cluster) {
         return () -> {
-//            if (RedisUtils.shouldBeRangeQuery()) {
-//                return createGetRangeQuery(cluster);
-//            }
+            if (RedisUtils.shouldBeRangeQuery()) {
+                return createGetRangeQuery(cluster);
+            }
             String randomExistingKey = RedisUtils.getRandomExistingKey();
-            System.out.println("Redis GET key: " + randomExistingKey);
+//            System.out.println("Redis GET key: " + randomExistingKey);
             return cluster.hgetAll(randomExistingKey).toString();
         };
     }
@@ -79,18 +71,18 @@ public class Main {
 
         if (randomExistingKey.startsWith("business")) {
             randomExistingKey = randomExistingKey + ":reviews";
-            System.out.println("Redis RANGE key: " + randomExistingKey);
+//            System.out.println("Redis RANGE key: " + randomExistingKey);
 
-            return cluster.lrange(randomExistingKey, 0L, 10L).toString();
+            return cluster.lrange(randomExistingKey, 0L, -1L).toString();
         } else if (randomExistingKey.startsWith("user")) {
             randomExistingKey = randomExistingKey + ":friends";
-            System.out.println("Redis RANGE key: " + randomExistingKey);
+//            System.out.println("Redis RANGE key: " + randomExistingKey);
 
-            return cluster.lrange(randomExistingKey, 0L, 10L).toString();
+            return cluster.lrange(randomExistingKey, 0L, -1L).toString();
         } else {
             randomExistingKey = RedisUtils.keys.get(0) + ":reviews";
-            System.out.println("Redis RANGE key: " + randomExistingKey);
-            return cluster.lrange(randomExistingKey, 0L, 10L).toString();
+//            System.out.println("Redis RANGE key: " + randomExistingKey);
+            return cluster.lrange(randomExistingKey, 0L, -1L).toString();
         }
     }
 
@@ -98,7 +90,7 @@ public class Main {
         return () -> {
             String randomNonExistingKey = RedisUtils.getRandomNonExistingKey();
             String randomValue = RedisUtils.getRandomValue();
-            System.out.println("Redis SET key: " + randomNonExistingKey + "  values: " + randomValue);
+//            System.out.println("Redis SET key: " + randomNonExistingKey + "  values: " + randomValue);
             return cluster.set(randomNonExistingKey, randomValue);
         };
     }
