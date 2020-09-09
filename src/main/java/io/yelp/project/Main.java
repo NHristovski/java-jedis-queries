@@ -58,40 +58,24 @@ public class Main {
     private static Callable<String> createGetQuery(JedisCluster cluster) {
         return () -> {
             if (RedisUtils.shouldBeRangeQuery()) {
-                return createGetRangeQuery(cluster);
+                var start = 0;
+                var stop = 10;
+                var randomLRangeKey = RedisUtils.getRandomLRangeKey();
+                var result = cluster.lrange(randomLRangeKey, start, stop).toString();
+                return String.format("lrange %s %d %d => %s", randomLRangeKey, start, stop, result);
             }
-            String randomExistingKey = RedisUtils.getRandomExistingKey();
-//            System.out.println("Redis GET key: " + randomExistingKey);
-            return cluster.hgetAll(randomExistingKey).toString();
+            var randomHGetAllKey = RedisUtils.getRandomHGetAllKey();
+            var result = cluster.hgetAll(randomHGetAllKey).toString();
+            return String.format("hgetall %s => %s", randomHGetAllKey, result);
         };
-    }
-
-    private static String createGetRangeQuery(JedisCluster cluster) {
-        String randomExistingKey = RedisUtils.getRandomExistingKey();
-
-        if (randomExistingKey.startsWith("business")) {
-            randomExistingKey = randomExistingKey + ":reviews";
-//            System.out.println("Redis RANGE key: " + randomExistingKey);
-
-            return cluster.lrange(randomExistingKey, 0L, -1L).toString();
-        } else if (randomExistingKey.startsWith("user")) {
-            randomExistingKey = randomExistingKey + ":friends";
-//            System.out.println("Redis RANGE key: " + randomExistingKey);
-
-            return cluster.lrange(randomExistingKey, 0L, -1L).toString();
-        } else {
-            randomExistingKey = RedisUtils.keys.get(0) + ":reviews";
-//            System.out.println("Redis RANGE key: " + randomExistingKey);
-            return cluster.lrange(randomExistingKey, 0L, -1L).toString();
-        }
     }
 
     private static Callable<String> createSetQuery(JedisCluster cluster) {
         return () -> {
-            String randomNonExistingKey = RedisUtils.getRandomNonExistingKey();
-            String randomValue = RedisUtils.getRandomValue();
-//            System.out.println("Redis SET key: " + randomNonExistingKey + "  values: " + randomValue);
-            return cluster.set(randomNonExistingKey, randomValue);
+            var randomNonExistingKey = RedisUtils.getRandomNonExistingKey();
+            var randomValue = RedisUtils.getRandomValue();
+            var result = cluster.set(randomNonExistingKey, randomValue);
+            return String.format("set %s %s => %s", randomNonExistingKey, randomValue, result);
         };
     }
 
