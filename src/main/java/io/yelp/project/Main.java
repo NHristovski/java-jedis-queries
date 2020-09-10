@@ -1,17 +1,18 @@
 package io.yelp.project;
 
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.ScanParams;
+import redis.clients.jedis.ScanResult;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+
+import static redis.clients.jedis.ScanParams.SCAN_POINTER_START;
 
 public class Main {
 
@@ -19,41 +20,79 @@ public class Main {
 
         var properties = new ApplicationProperties();
 
+
         JedisCluster cluster = new JedisCluster(properties.getHostsAndPorts(), 3000, 50);
+        ScanParams scanParams = new ScanParams();
 
-        ExecutorService service = Executors.newFixedThreadPool(properties.getThreadsCount());
+//        System.out.println(cluster.scan("0", scanParams.count(200).match("*")).getResult());
 
-        List<Future<String>> futures = new ArrayList<>();
+        String keyPrefix = "business:*";
+//        String keyPrefix1 = "user:*";
+//        String keyPrefix2 = "review:*";
 
-        System.out.println("Starting queries at: " + Instant.now());
+        ScanParams params = new ScanParams()
+                .match(keyPrefix)
+                .count(100_000);
 
-        long start = System.currentTimeMillis();
+        cluster.getClusterNodes().values().stream().forEach(pool -> {
+            boolean done = false;
+            String cur = SCAN_POINTER_START;
+            try (Jedis jedisNode = pool.getResource()) {
+                while (!done) {
+                    ScanResult<String> resp = jedisNode.scan(cur, params);
 
-        for (int i = 0; i < properties.getQueriesCount(); i++) {
-            Future<String> futureResult = service.submit(createGetQuery(cluster));
-            futures.add(futureResult);
-        }
+                    StringBuilder builder = new StringBuilder();
+                    for (String s : resp.getResult()) {
+                        builder.append(s).append("\n");
+                    }
 
-        futures.forEach(f -> {
-            try {
-                f.get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
+                    try {
+                        Files.write(Paths.get("business_keys.txt"), builder.toString().getBytes(), StandardOpenOption.CREATE);
+                    } catch (IOException e) {
+                        //exception handling left as an exercise for the reader
+                        e.printStackTrace();
+                    }
+
+                    cur = resp.getCursor();
+                    if (cur.equals(SCAN_POINTER_START)) {
+                        done = true;
+                    }
+                }
             }
-        });
-
-        long end = System.currentTimeMillis();
-
-        long milliseconds = end - start;
-
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds);
-
-        System.out.format("%d Milliseconds = %d minutes\n", milliseconds, minutes );
-
-        System.out.println("End all queries at: " + Instant.now());
-
-        service.shutdown();
-    }
+    });
+//        ExecutorService service = Executors.newFixedThreadPool(properties.getThreadsCount());
+//
+//        List<Future<String>> futures = new ArrayList<>();
+//
+//        System.out.println("Starting queries at: " + Instant.now());
+//
+//        long start = System.currentTimeMillis();
+//
+//        for (int i = 0; i < properties.getQueriesCount(); i++) {
+//            Future<String> futureResult = service.submit(createGetQuery(cluster));
+//            futures.add(futureResult);
+//        }
+//
+//        futures.forEach(f -> {
+//            try {
+//                f.get();
+//            } catch (InterruptedException | ExecutionException e) {
+//                e.printStackTrace();
+//            }
+//        });
+//
+//        long end = System.currentTimeMillis();
+//
+//        long milliseconds = end - start;
+//
+//        long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds);
+//
+//        System.out.format("%d Milliseconds = %d minutes\n", milliseconds, minutes );
+//
+//        System.out.println("End all queries at: " + Instant.now());
+//
+//        service.shutdown();
+}
 
     private static Callable<String> createGetQuery(JedisCluster cluster) {
         return () -> {
