@@ -11,10 +11,12 @@ import java.util.stream.Collectors;
 public class IdsReader {
 
 	private static final String PARENT = "/ids";
+	private static final String SECOND_MODEL_PARENT = "/model2/ids";
 
 	private static final String BUSINESS_PARENT = PARENT + "/business";
 	private static final String USER_PARENT = PARENT + "/user";
-	private static final String REVIEW_PARENT = PARENT + "/review";
+	// TODO CHANGE PARENT
+	private static final String REVIEW_PARENT = SECOND_MODEL_PARENT + "/review";
 
 	private static final int BUSINESS_IDS_COUNT = 209_393;
 	private static final int REVIEW_IDS_COUNT = 1_215_836;
@@ -27,6 +29,8 @@ public class IdsReader {
 	private static List<String> businessesIdsCache;
 	private static List<String> reviewIdsCache;
 	private static List<String> usersIdsCache;
+
+	private static String SEPARATOR = " ";
 
 	public static List<String> readBusinessesIds() throws IOException {
 		if (businessesIdsCache == null) {

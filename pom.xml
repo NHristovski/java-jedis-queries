@@ -21,6 +21,13 @@
             <artifactId>jedis</artifactId>
             <version>3.3.0</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/io.monix/shade -->
+        <dependency>
+            <groupId>io.monix</groupId>
+            <artifactId>shade_2.12</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

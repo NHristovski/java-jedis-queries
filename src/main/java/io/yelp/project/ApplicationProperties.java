@@ -2,6 +2,7 @@ package io.yelp.project;
 
 import redis.clients.jedis.HostAndPort;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -12,8 +13,9 @@ public class ApplicationProperties {
 	private final int threadsCount;
 	private final int queriesCount;
 	private final Set<HostAndPort> hostsAndPorts;
+	private final String memcachedHosts;
 
-	public ApplicationProperties() {
+	public ApplicationProperties(String configFile) {
 		var properties = new Properties();
 
 		int tempThreadsCount;
@@ -21,7 +23,7 @@ public class ApplicationProperties {
 		Set<HostAndPort> tempHostsAndPorts;
 
 		try {
-			properties.load(ApplicationProperties.class.getResourceAsStream(PATH));
+			properties.load(new FileInputStream(configFile));
 
 			tempThreadsCount = integer(properties, "count.threads");
 			tempQueriesCount = integer(properties, "count.queries");
@@ -38,6 +40,8 @@ public class ApplicationProperties {
 		threadsCount = tempThreadsCount;
 		queriesCount = tempQueriesCount;
 		hostsAndPorts = tempHostsAndPorts;
+
+		this.memcachedHosts = properties.getProperty("memcached.servers").replaceAll("\"", "");
 	}
 
 	private Set<HostAndPort> readHostsAndPorts(Properties properties) {
@@ -77,7 +81,20 @@ public class ApplicationProperties {
 		return queriesCount;
 	}
 
+	public String getMemcachedHosts() {
+		return memcachedHosts;
+	}
+
 	public Set<HostAndPort> getHostsAndPorts() {
 		return hostsAndPorts;
+	}
+
+	@Override
+	public String toString() {
+		return "ApplicationProperties{" +
+				"threadsCount=" + threadsCount +
+				", queriesCount=" + queriesCount +
+				", hostsAndPorts=" + hostsAndPorts +
+				'}';
 	}
 }

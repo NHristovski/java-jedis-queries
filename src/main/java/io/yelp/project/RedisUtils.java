@@ -15,7 +15,7 @@ public class RedisUtils {
 		return UUID.randomUUID().toString();
 	}
 
-	private static String getRandomBusinessKey() throws IOException {
+	public static String getRandomBusinessKey() throws IOException {
 		var businessesIds = IdsReader.readBusinessesIds();
 		var businessIdIndex = random.nextInt(businessesIds.size());
 		return businessesIds.get(businessIdIndex);
@@ -46,6 +46,25 @@ public class RedisUtils {
 		}
 	}
 
+	public static String getRandomHGetAllKeyModelTwo() throws IOException {
+		var entityIndex = random.nextInt(4);
+		if (entityIndex == 0) {
+			return String.format("business:%s", getRandomBusinessKey());
+		} else if (entityIndex == 1) {
+			return String.format("business:%s:hours", getRandomBusinessKey());
+		} else if (entityIndex == 2) {
+
+			String reviewFullKey = getRandomReviewKey();
+
+			String reviewKey = reviewFullKey.split(" ")[0];
+			String businessKey = reviewFullKey.split(" ")[1];
+
+			return String.format("business:%s:review:%s", businessKey, reviewKey);
+		} else {
+			return String.format("user:%s", getRandomUserKey());
+		}
+	}
+
 	public static String getRandomLRangeKey() throws IOException {
 		var entityIndex = random.nextInt(4);
 		if (entityIndex == 0) {
@@ -57,6 +76,13 @@ public class RedisUtils {
 		} else {
 			return String.format("user:%s:reviews", getRandomUserKey());
 		}
+	}
+
+	public static String getRandomLRangeKeyModelTwo() throws IOException {
+		if (random.nextBoolean()){
+			return String.format("business:%s:categories", getRandomBusinessKey());
+		}
+		return String.format("user:%s:friends", getRandomUserKey());
 	}
 
 	public static boolean shouldBeGetQuery() {
