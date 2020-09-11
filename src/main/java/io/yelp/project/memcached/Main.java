@@ -1,45 +1,126 @@
 package io.yelp.project.memcached;
 
-import net.spy.memcached.ConnectionFactoryBuilder;
-import net.spy.memcached.DefaultConnectionFactory;
-import scala.Option;
-import scala.concurrent.ExecutionContext;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
-import shade.memcached.BaseCodecs;
-import shade.memcached.Codec;
-import shade.memcached.Configuration;
-import shade.memcached.FailureMode;
-import shade.memcached.Memcached;
-import shade.memcached.MemcachedCodecs;
-import shade.memcached.Protocol;
+import io.yelp.project.ApplicationProperties;
+import io.yelp.project.RedisUtils;
 
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static java.nio.charset.StandardCharsets.*;
-
 public class Main {
-    public static void main(String[] args) {
-        Memcached memcached = Memcached.apply(new Configuration("15.161.159.56:11211 15.161.189.166:11211 15.161.153.91:11211",
-                Option.apply(null),
-                Option.apply(null),
-                Protocol.Binary(),
-                FailureMode.Retry(),
-                FiniteDuration.apply(1, TimeUnit.SECONDS),
-                Option.apply(null),
-                false,
-                Option.apply(null),
-                Option.apply(null),
-                Option.apply(null),
-                DefaultConnectionFactory.DEFAULT_HASH,
-                ConnectionFactoryBuilder.Locator.ARRAY_MOD), ExecutionContext.global());
+    public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
+        runMemcachedQueriesModelTwo(args);
+    }
 
-//        memcached.set("testingNikola", "test123", Duration.Inf(), new MyCodec());
+    public static void runMemcachedQueriesModelTwo(String[] args) throws IOException {
+        String configFile = args[0];
 
-//        Option<String> testingNikola = memcached.awaitGet("testingNikola", new MyCodec());
-//        System.out.println(testingNikola.get());
+        System.out.println("The config file is: " + configFile);
 
+        ApplicationProperties properties = new ApplicationProperties(configFile);
+
+        MemcachedFacade.init(properties);
+
+        ExecutorService service = Executors.newFixedThreadPool(properties.getThreadsCount());
+
+        List<java.util.concurrent.Future<String>> futures = new ArrayList<>();
+
+        System.out.println("Starting queries at: " + Instant.now());
+
+        long start = System.currentTimeMillis();
+
+        for (int i = 0; i < properties.getQueriesCount(); i++) {
+            Future<String> futureResult = service.submit(createGetQueryForMemcachedModelTwo());
+            futures.add(futureResult);
+        }
+
+        for (int i = 0; i < futures.size(); i++) {
+            try {
+                futures.get(i).get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            futures.set(i, null);
+        }
+
+        long end = System.currentTimeMillis();
+
+        long milliseconds = end - start;
+
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds);
+
+        System.out.format("%d Milliseconds = %d minutes\n", milliseconds, minutes);
+
+        System.out.println("End all queries at: " + Instant.now());
+
+        service.shutdown();
+    }
+
+    private static Callable<String> createGetQueryForMemcachedModelTwo() throws IOException {
+        return () -> {
+            String randomKey = RedisUtils.getRandomMemcachedKeyModelTwo();
+
+            return MemcachedFacade.get(randomKey);
+        };
+    }
+
+    public static void runMemcachedQueriesModelOne(String[] args) throws IOException, ExecutionException, InterruptedException {
+        String configFile = args[0];
+
+        System.out.println("The config file is: " + configFile);
+
+        ApplicationProperties properties = new ApplicationProperties(configFile);
+
+        MemcachedFacade.init(properties);
+
+        ExecutorService service = Executors.newFixedThreadPool(properties.getThreadsCount());
+
+        List<java.util.concurrent.Future<String>> futures = new ArrayList<>();
+
+        System.out.println("Starting queries at: " + Instant.now());
+
+        long start = System.currentTimeMillis();
+
+        for (int i = 0; i < properties.getQueriesCount(); i++) {
+            Future<String> futureResult = service.submit(createGetQueryForMemcachedModelOne());
+            futures.add(futureResult);
+        }
+
+        for (int i = 0; i < futures.size(); i++) {
+            try {
+                futures.get(i).get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            futures.set(i, null);
+        }
+
+        long end = System.currentTimeMillis();
+
+        long milliseconds = end - start;
+
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds);
+
+        System.out.format("%d Milliseconds = %d minutes\n", milliseconds, minutes);
+
+        System.out.println("End all queries at: " + Instant.now());
+
+        service.shutdown();
+    }
+
+    private static Callable<String> createGetQueryForMemcachedModelOne() throws IOException {
+        return () -> {
+            String randomKey = RedisUtils.getRandomMemcachedKey();
+            return MemcachedFacade.get(randomKey);
+        };
     }
 }
+
+

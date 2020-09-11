@@ -45,6 +45,16 @@ public class RedisUtils {
 			return String.format("user:%s", getRandomUserKey());
 		}
 	}
+	public static String getRandomMemcachedKey() throws IOException {
+		var entityIndex = random.nextInt(3);
+		if (entityIndex == 0) {
+			return String.format("business:%s", getRandomBusinessKey());
+		} else if (entityIndex == 1) {
+			return String.format("review:%s", getRandomReviewKey());
+		} else {
+			return String.format("user:%s", getRandomUserKey());
+		}
+	}
 
 	public static String getRandomHGetAllKeyModelTwo() throws IOException {
 		var entityIndex = random.nextInt(4);
@@ -91,5 +101,21 @@ public class RedisUtils {
 
 	public static boolean shouldBeRangeQuery() {
 		return random.nextBoolean();
+	}
+
+	public static String getRandomMemcachedKeyModelTwo() throws IOException {
+		var entityIndex = random.nextInt(3);
+		if (entityIndex == 0) {
+			return String.format("business:%s", getRandomBusinessKey());
+		} else if (entityIndex == 1) {
+			String reviewFullKey = getRandomReviewKey();
+
+			String reviewKey = reviewFullKey.split(" ")[0];
+			String businessKey = reviewFullKey.split(" ")[1];
+
+			return String.format("business:%s:review:%s", businessKey, reviewKey);
+		} else {
+			return String.format("user:%s", getRandomUserKey());
+		}
 	}
 }
